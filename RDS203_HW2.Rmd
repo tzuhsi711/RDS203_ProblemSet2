@@ -1,0 +1,576 @@
+---
+title: "RDS203_HW2"
+author: "Tzu-Hsi (Cece) Jen"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: 
+    toc: true
+    toc_depth: 3
+    toc_float: true
+---
+
+```{r}
+library(ggplot2)
+library(tidyr)
+library(tidyverse)
+library(gt)
+```
+
+## Question 1
+
+### 1a
+```{r}
+data1a <- read.csv("./rds203_problemset2/data/Q1a.csv")
+data1a <- data1a|>
+  pivot_longer(cols = c("Well", "Sick", "Dead"),
+               names_to = "Status",
+               values_to = "Proportion")
+head(data1a, 3)
+
+ggplot(data1a, aes(x = Year, y = Proportion, colour = Status))+
+  geom_line()+
+  scale_colour_manual(values = c("Well" = "green",
+                                 "Sick" = "blue",
+                                 "Dead" = "red"))+
+  labs(x = "Year",
+       y = "Status")+
+  theme_minimal()
+```
+
+### 1b
+```{r}
+data1b <- read.csv("./rds203_problemset2/data/Q1b.csv")
+data1b <- data1b|>
+  pivot_longer(cols = c("Well", "Sick", "Dead"),
+               names_to = "Status",
+               values_to = "Proportion")
+head(data1b, 3)
+
+ggplot(data1b, aes(x = Year, y = Proportion, colour = Status))+
+  geom_line()+
+  scale_colour_manual(values = c("Well" = "green",
+                                 "Sick" = "blue",
+                                 "Dead" = "red"))+
+  labs(x = "Year",
+       y = "Status")+
+  theme_minimal()
+```
+
+## Question 2
+
+```{r}
+# data2 <- read.csv("./rds203_problemset2/data/Q2.csv")
+# gt(data2)
+```
+
+## Question 3
+
+### 3e
+
+```{r}
+data3e <- read.csv("./rds203_problemset2/data/Q3e.csv")
+head(data3e, 3)
+
+# Compute mean and 95% uncertainty intervals for plotting
+mean_3e <- mean(data3e$LifeExpectancy)
+ui_3e <- quantile(data3e$LifeExpectancy, c(0.025, 0.975))
+
+ggplot(data3e, aes(x = LifeExpectancy))+
+  geom_histogram(bins = 20, fill = "lightblue", colour = "white")+
+  geom_vline(xintercept = mean_3e, colour = "red")+
+  geom_vline(xintercept = ui_3e, colour = "black", linetype = "dashed")+
+  # Add annotation
+  annotate("text",
+          x = (mean_3e*0.95), y = 10,
+          label = paste0("Mean=", round(mean_3e, 2)),
+          colour = "red")+
+  labs(x = "Life Expectancy",
+       y = "Frequency (number of simulations)")+
+  theme_minimal()
+  # theme(
+  #   panel.grid.major = element_line(colour = "grey95"),
+  #   panel.grid.minor = element_blank()
+  # )
+```
+## Question 5
+
+### 5e
+
+```{r}
+data5e <- read.csv("./rds203_problemset2/data/Q5e.csv")
+head(data5e, 3)
+
+# Plot: distribution of the total number of infections 
+ggplot(data5e, aes(x = TotalInfection))+
+  geom_histogram(fill = "lightblue", colour = "white", bins = 30)+
+  labs(x = "Total Infection",
+       y = "Count")+
+  scale_y_log10()+
+  theme_minimal()+
+  theme(
+    panel.grid.major = element_line(colour = "grey95")
+  )
+
+# Plot: distribution of the total number of infections, excluding no-spread cases (TotalInfection == 1)
+data5e|>
+  filter(TotalInfection > 1)|>
+  ggplot(aes(x = TotalInfection))+
+  geom_histogram(fill = "lightblue", colour = "white",bins = 30)+
+  scale_y_log10()+
+  labs(x = "Total Infection",
+       y = "Count")+
+  theme_minimal()+
+  theme(
+    panel.grid.major = element_line(colour = "grey95")
+  )
+
+# Plot: length of the epidemic
+ggplot(data5e, aes(x = Duration))+
+  geom_histogram(fill = "lightblue", colour = "white",bins = 30)+
+  labs(x = "Epidemic Duration (days)",
+       y = "Count")+
+  theme_minimal()+
+  theme(
+    panel.grid.major = element_line(colour = "grey95")
+  )
+```
+
+```{r}
+ggplot(data5e, aes(x=TotalInfection))+
+  geom_histogram(aes(y = after_stat(count / sum(count))),
+                     bins = 30,
+                     fill = "lightblue",
+                     colour = "white")+
+  labs(x = "Total Infections",
+       y = "Proportion")+
+  theme_minimal()+
+  theme(panel.grid.minor = element_blank())
+
+ggplot(data5e, aes(x=Duration))+
+  geom_histogram(aes(y = after_stat(count / sum(count))),
+                     bins = 30,
+                     fill = "lightblue",
+                     colour = "white")+
+  labs(x = "Epidemic Duration (days)",
+       y = "Proportion")+
+  theme_minimal()
+```
+
+## Question 6
+
+### 6b
+
+```{r}
+data6a <- read.csv("./rds203_problemset2/data/Q6a.csv") # baseline
+data6b <- read.csv("./rds203_problemset2/data/Q6b.csv") # intervention
+
+head(data6a, 2)
+head(data6b, 2)
+
+# Compute mean gain and 95% UI
+gain <- data6b$LifeExpectancy - data6a$LifeExpectancy
+gainMean <- mean(gain)
+ui <- quantile(gain, c(0.025, 0.975))
+lower_ui <- ui[1]
+upper_ui <- ui[2]
+
+print(paste0("Mean gain: ", round(gainMean, 2)))
+print(paste0("95% UI: [", round(lower_ui, 2), ", ", round(upper_ui, 2) ,"]"))
+
+# Plot baseline vs intervention
+data6ab_long <- data6a|>
+  rownames_to_column("Iteration")|>
+  dplyr::rename("Baseline" = "LifeExpectancy")|>
+  left_join(data6b|>
+              rownames_to_column("Iteration")|>
+              dplyr::rename("Intervention" = "LifeExpectancy"),
+            by = "Iteration"
+            )|>
+  pivot_longer(cols = c("Baseline", "Intervention"),
+               names_to = "Type",
+               values_to = "LifeExpectancy")
+head(data6ab_long, 2)
+
+# Compute mean for both groups
+mean_df <- data6ab_long|>
+  group_by(Type)|>
+  summarise(mean_le = mean(LifeExpectancy))
+
+# Plot distribution with mean lines
+ggplot(data6ab_long, aes(x = LifeExpectancy, fill = Type))+
+  geom_histogram(alpha = 0.4, position = "identity", bins = 30)+
+  
+  geom_vline(data = mean_df,
+             aes(xintercept = mean_le),
+             colour = "grey70", linetype = "dashed")+
+  geom_text(data = mean_df,
+            aes(x = mean_le, y = Inf,
+                label = paste0("Mean=", round(mean_le, 2))),
+            vjust = 1.2,
+            colour = "black")+
+  labs(x = "Life Expectancy (years)",
+       y = "Count")+
+  theme_minimal()
+
+# Plot intervention - baseline
+data6ab_wide <- data6a|>
+  rownames_to_column("Iteration")|>
+  dplyr::rename("Baseline" = "LifeExpectancy")|>
+  left_join(data6b|>
+              rownames_to_column("Iteration")|>
+              dplyr::rename("Intervention" = "LifeExpectancy"),
+            by = "Iteration"
+            )|>
+  mutate(gain = Intervention - Baseline)
+
+ggplot(data6ab_wide, aes(x = gain))+
+  geom_histogram(fill = "lightgreen", alpha = 0.4, bins = 30)+
+  geom_vline(xintercept = gainMean, colour = "red")+
+  geom_vline(xintercept = ui, colour = "grey70", linetype = "dashed")+
+  
+  annotate("text",
+           x = 5.15, y = 87,
+           label = paste0("Mean=", round(gainMean, 2)),
+           colour = "red")+
+  annotate("text",
+           x = lower_ui, y = 87,
+           label = paste0("2.5%"), vjust = 2)+
+  annotate("text",
+           x = upper_ui, y = 87,
+           label = paste0("97.5%"), vjust = 2)+  
+
+  labs(x = "Gained Life Expectancy (years)",
+       y = "Count")+
+  theme_minimal()
+```
+
+### 6c
+
+```{r}
+data6c <- read.csv("./rds203_problemset2/data/Q6c.csv")
+head(data6c, 2)
+
+# Plot baseline vs intervention
+data6c_long <- data6c|>
+  pivot_longer(cols = c("Baseline", "Intervention"),
+               names_to = "Type",
+               values_to = "LifeExpectancy")
+
+mean_df <- data6c_long|>
+  group_by(Type)|>
+  summarise(mean_le = mean(LifeExpectancy))
+
+ggplot(data6c_long, aes(x = LifeExpectancy, fill = Type))+
+  geom_histogram(alpha = 0.4, position = "identity", bins = 30)+
+  
+  geom_vline(data = mean_df,
+             aes(xintercept = mean_le),
+             colour = "grey70")+
+  geom_text(data = mean_df,
+            aes(x = mean_le, y = Inf,
+                label = paste0("Mean=", round(mean_le, 2))),
+            vjust = 1.2,
+            colour = "black")+
+  labs(x = "Life Expectancy (years)",
+       y = "Count")+
+  theme_minimal()
+  
+# Plot gain
+gainMean <- round(mean(data6c$Gain), 2)
+ui <- quantile(data6c$Gain, c(0.025, 0.975))
+lower_ui <- ui[1]
+upper_ui <- ui[2]
+
+ggplot(data6c, aes(x = Gain))+
+  geom_histogram(fill = "lightgreen", alpha = 0.4, bins = 30)+
+  geom_vline(xintercept = gainMean, colour = "red")+
+  geom_vline(xintercept = ui, colour = "grey70", linetype = "dashed")+
+  
+  annotate("text",
+           x = 5.15, y = 87,
+           label = paste0("Mean=", round(gainMean, 2)),
+           colour = "red")+
+  annotate("text",
+           x = lower_ui, y = 87,
+           label = paste0("2.5%"), vjust = 2)+
+  annotate("text",
+           x = upper_ui, y = 87,
+           label = paste0("97.5%"), vjust = 2)+  
+
+  labs(x = "Gained Life Expectancy (years)",
+       y = "Count")+
+  theme_minimal()
+```
+
+## Question 7
+
+### 7e
+
+```{r}
+# ---------------
+# Load datasets
+# ---------------
+# Simulated
+data7e <- read.csv("./rds203_problemset2/data/Q7e.csv")
+data7e
+
+# Target
+ages <- c(20, 35, 45, 60, 75, 90)
+targets <- data.frame(
+  Age = ages,
+  prev_mean = c(4.21, 7.19, 9.41, 12.03, 14.82, 18.59),
+  prev_low  = c(3.88, 6.70, 8.85, 11.29, 13.64, 16.15),
+  prev_high = c(4.61, 7.68, 10.07, 12.96, 15.94, 21.43),
+
+  mort_mean = c(14.03, 13.26, 13.21, 13.68, 15.09, 23.87),
+  mort_low  = c(10.80, 10.97, 10.58, 11.22, 11.80, 16.07),
+  mort_high = c(17.32, 15.64, 16.00, 16.17, 18.44, 32.96)
+)
+head(targets, 2)
+
+# ---------------
+# Model predictions
+# ---------------
+# Prevalence
+sim_prev <- data.frame(
+  age = ages,
+  value = as.numeric(data7e[1, grep("prev_", names(data7e))])
+)
+
+# Mortality
+sim_mort <- data.frame(
+  age = ages,
+  value = as.numeric(data7e[1, grep("mort_", names(data7e))])
+)
+
+sim_prev
+sim_mort
+
+# ---------------
+# Plot
+# ---------------
+# Plot: Prevalence
+ggplot()+
+  # Target
+  geom_point(data = targets, aes(x = Age, y = prev_mean, colour = "Observed (Target)"))+
+  geom_errorbar(data = targets,
+                aes(x = Age, ymin = prev_low, ymax = prev_high, colour = "Observed (Target)"),
+                width = 2)+
+  # Simulated
+  geom_line(data = sim_prev, aes(x = age, y = value, colour = "Simulated (Model)") , linewidth = 1)+
+  
+  scale_colour_manual(values = c("Observed (Target)" = "red",
+                                 "Simulated (Model)" = "blue"))+
+  labs(y = "Prevalence (%)",
+       colour = " ")+
+  theme_minimal()+
+  theme(legend.position = "top")
+
+# Plot: Mortality
+ggplot()+
+  # Target
+  geom_point(data = targets, aes(x = Age, y = mort_mean, colour = "Observed (Target)"))+
+  geom_errorbar(data = targets,
+                aes(x = Age, ymin = mort_low, ymax = mort_high, colour = "Observed (Target)"),
+                width = 2)+
+  # Simulated
+  geom_line(data = sim_mort, aes(x = age, y = value, colour = "Simulated (Model)"), linewidth = 1)+
+  scale_colour_manual(values = c("Observed (Target)" = "red",
+                                 "Simulated (Model)" = "blue"))+
+  labs(y = "Mortality (%)",
+       colour = " ")+
+  theme_minimal()+
+  theme(legend.position = "top")
+```
+
+### 7f
+
+```{r}
+# ---------------
+# Load dataset
+# ---------------
+data7f <- read.csv("./rds203_problemset2/data/Q7f.csv")
+head(data7e, 2)
+
+# ---------------
+# Compute mean and range
+# ---------------
+# Prevalence
+prev_mean <- colMeans(data7f[, grep("prev_", names(data7f))])
+prev_min <- apply(data7f[, grep("prev_", names(data7f))], 2, min)
+prev_max <- apply(data7f[, grep("prev_", names(data7f))], 2, max)
+
+# Mortality
+mort_mean <- colMeans(data7f[, grep("mort_", names(data7f))])
+mort_min <- apply(data7f[, grep("mort_", names(data7f))], 2, min)
+mort_max <- apply(data7f[, grep("mort_", names(data7f))], 2, max)
+
+# ---------------
+# Create subsets
+# ---------------
+# Prevalence
+sim_prev <- data.frame(
+  age = ages,
+  mean = prev_mean,
+  min = prev_min,
+  max = prev_max
+)
+rownames(sim_prev) <- NULL
+
+# Mortality
+sim_mort <- data.frame(
+  age = ages,
+  mean = mort_mean,
+  min = mort_min,
+  max = mort_max
+)
+rownames(sim_mort) <- NULL
+
+sim_prev
+sim_mort
+
+# ---------------
+# Plot
+# ---------------
+# Plot: Prevalence
+ggplot()+
+  # Target
+  geom_point(data = targets, aes(x = Age, y = prev_mean, colour = "Observed (Target)"))+
+  geom_errorbar(data = targets,
+                aes(x = Age, ymin = prev_low, ymax = prev_high, colour = "Observed (Target)"),
+                linewidth = 2)+
+  # Simulated
+  geom_line(data = sim_prev, aes(x = age, y = mean, colour = "Simulated (Model)"), linewidth = 1)+
+  geom_ribbon(data = sim_prev,
+              aes(x = age, ymin = min, ymax = max),
+              fill = "steelblue", alpha = 0.4)+
+  scale_colour_manual(values = c("Observed (Target)" = "red",
+                                 "Simulated (Model)" = "blue"))+
+  labs(y = "Prevalence (%)",
+       colour = " ")+
+  theme_minimal()+
+  theme(legend.position = "top")
+
+# Plot: Mortality
+ggplot()+
+  # Target
+  geom_point(data = targets, aes(x = Age, y = mort_mean, colour = "Observed (Target)"))+
+  geom_errorbar(data = targets,
+                aes(x = Age, ymin = mort_low, ymax = mort_high, colour = "Observed (Target)"),
+                linewidth = 2)+
+  # Simulated
+  geom_line(data = sim_mort, aes(x = age, y = mean, colour = "Simulated (Model)"), linewidth = 1)+
+  geom_ribbon(data = sim_mort,
+              aes(x = age, ymin = min, ymax = max),
+              fill = "steelblue", alpha = 0.4)+
+  scale_colour_manual(values = c("Observed (Target)" = "red",
+                                 "Simulated (Model)" = "blue"))+
+  labs(y = "Mortality (%)",
+       colour = " ")+
+  theme_minimal()+
+  theme(legend.position = "top")
+```
+
+## Question 8
+
+```{r}
+data8 <- read.csv("./rds203_problemset2/data/Q8.csv")
+head(data8, 2)
+
+data8_long <- data8|>
+  pivot_longer(cols = c("Chain1", "Chain2"),
+               names_to = "Chain",
+               values_to = "theta")
+head(data8_long, 2)
+
+# Plot tract of the chains
+ggplot(data8_long, aes(x = Iter, y = theta, colour = Chain))+
+  geom_line(alpha = 0.4)+
+  scale_colour_manual(values = c(Chain1 = "steelblue1",
+                                 Chain2 = "pink2"))+
+  labs(x = "Iteration",
+       y = expression(theta),
+       colour = " ")+
+  theme_minimal()+
+  theme(legend.position = "top")
+
+# Plot distribution of the posteriors vs prior
+pos_df <- data.frame(theta = c(data8$Chain1, data8$Chain2))
+head(pos_df, 2)
+
+ggplot(pos_df, aes(x = theta))+
+  # Posterior
+  geom_histogram(aes(y = after_stat(density), fill = "Posterior"),
+                 bins = 50,
+                 alpha = 0.6)+
+  # Prior
+  stat_function(aes(colour = "Prior"),
+                fun = function(x) dnorm(x, 120, sqrt(2)),
+                linewidth = 1.2)+
+  scale_fill_manual(values = c("Posterior" = "lightblue"))+
+  scale_colour_manual(values = c("Prior" = "red"))+
+  labs(x = expression(theta),
+       y = "Density",
+       colour = " ",
+       fill = " ")+
+  theme_minimal()+
+  theme(legend.position = "top")
+```
+
+```{r}
+# Posterior
+par(xpd = TRUE) 
+
+pos <- c(data8$Chain1, data8$Chain2)
+plot(density(pos),
+     col="blue",
+     main = "Posterior",
+     xlab = expression(theta),
+     ylab = "Density")
+
+# Add peak
+d <- density(pos)
+peak_x <- d$x[which.max(d$y)]
+peak_y <- max(d$y)
+points(peak_x, peak_y, col= "red", pch = 19)
+text(peak_x, peak_y,
+     labels = round(peak_x, 2),
+     pos = 4, offset = 0.5, col = "red")
+```
+
+```{r}
+# Prior
+curve(dnorm(x, mean=120, sd=sqrt(2)),
+      from=110, to=max(pos),
+      col="red",
+      main = "Prior",
+      xlab = expression(theta),
+      ylab = "Density")
+```
+
+## Question 9
+
+```{r}
+data9 <- read.csv("./rds203_problemset2/data/Q9.csv")
+head(data9)
+```
+
+```{r}
+# Prior
+curve(dbeta(x, 20, 80),
+      from = 0, to = 1,
+      col = "red",
+      lwd = 2,
+      main = "Prior",
+      xlab = "p",
+      ylab = "Density")
+```
+
+
+
+
+
+
+
+
